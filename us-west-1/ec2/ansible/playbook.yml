@@ -1,9 +1,28 @@
 ---
-- name: Configure EC2 instance
+- name: Configure GitLab Runner EC2 instance
   hosts: all
   become: yes
+  vars:
+    gitlab_runner_package: "gitlab-runner"
+    docker_users: ["ec2-user", "gitlab-runner"]
   
   tasks:
+    - name: Add GitLab Runner repository
+      get_url:
+        url: https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh
+        dest: /tmp/gitlab-runner-install.sh
+        mode: '0755'
+
+    - name: Execute GitLab Runner repository script
+      command: /tmp/gitlab-runner-install.sh
+      args:
+        creates: /etc/yum.repos.d/runner_gitlab-runner.repo
+
+    - name: Install GitLab Runner
+      yum:
+        name: "{{ gitlab_runner_package }}"
+        state: present
+
     - name: Install Docker
       yum:
         name: docker
@@ -15,8 +34,28 @@
         state: started
         enabled: yes
 
-    - name: Add ec2-user to docker group
+    - name: Add users to docker group
       user:
-        name: ec2-user
+        name: "{{ item }}"
         groups: docker
         append: yes
+      loop: "{{ docker_users }}"
+
+    - name: Register GitLab Runner
+      command: >
+        gitlab-runner register
+        --non-interactive
+        --url "{{ gitlab_url }}"
+        --registration-token "{{ gitlab_token }}"
+        --tag-list "{{ gitlab_tags }}"
+        --executor "docker"
+        --docker-image "docker:stable"
+        --docker-privileged
+      args:
+        creates: /etc/gitlab-runner/config.toml
+
+    - name: Start and enable GitLab Runner
+      service:
+        name: gitlab-runner
+        state: started
+        enabled: yes

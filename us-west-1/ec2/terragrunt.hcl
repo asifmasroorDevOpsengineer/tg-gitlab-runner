@@ -15,7 +15,7 @@ terraform {
 
   after_hook "ansible" {
     commands = ["apply"]
-execute = [
+    execute = [
       "bash", 
       "-c", 
       <<-EOT
@@ -31,6 +31,7 @@ execute = [
           -i $(cat ip.txt), \
           -u ec2-user \
           --private-key ~/.ssh/terragrunt-key.pem \
+          --extra-vars "gitlab_url=${local.root_config.locals.gitlab_url} gitlab_token=${local.root_config.locals.gitlab_token} gitlab_tags=${local.root_config.locals.gitlab_tags}" \
           ansible/playbook.yml
       EOT
     ]

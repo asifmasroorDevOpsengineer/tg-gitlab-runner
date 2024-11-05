@@ -7,6 +7,10 @@ locals {
   ami = "ami-0cf4e1fcfd8494d5b"
   instance_type = "t2.small"
   key_name = "terragrunt-key"
+
+  gitlab_url = "https://gitlab.com"
+  gitlab_token = "glrt-t3_6xAa9PXbnL4sX9yFfxuz"
+  gitlab_tags = "docker,ec2,aws"
 }
 
 remote_state {
