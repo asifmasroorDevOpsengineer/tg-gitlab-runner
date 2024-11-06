@@ -9,8 +9,8 @@ locals {
   key_name = "terragrunt-key"
 
   gitlab_url = "https://gitlab.com"
-  gitlab_token = "glrt-t3_6xAa9PXbnL4sX9yFfxuz"
-  gitlab_tags = "docker,ec2,aws"
+  gitlab_token = "glrt-t3_sEKxCLNeuZFp2Tsh7UnX"
+  gitlab_tags = "asif"
 }
 
 remote_state {

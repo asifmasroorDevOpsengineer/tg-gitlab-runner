@@ -30,7 +30,7 @@ terraform {
         ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
           -i $(cat ip.txt), \
           -u ec2-user \
-          --private-key ${local.root_config.locals.key_name} \
+          --private-key ~/.ssh/${local.root_config.locals.key_name}.pem \
           --extra-vars "gitlab_url=${local.root_config.locals.gitlab_url} gitlab_token=${local.root_config.locals.gitlab_token} gitlab_tags=${local.root_config.locals.gitlab_tags}" \
           ansible/playbook.yml
       EOT
