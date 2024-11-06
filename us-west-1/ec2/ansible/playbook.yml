@@ -1,28 +1,9 @@
 ---
-- name: Configure GitLab Runner EC2 instance
+- name: Configure EC2 instance
   hosts: all
-  become: yes
-  vars:
-    gitlab_runner_package: "gitlab-runner"
-    docker_users: ["ec2-user", "gitlab-runner"]
-  
+  become: true
+
   tasks:
-    - name: Add GitLab Runner repository
-      get_url:
-        url: https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh
-        dest: /tmp/gitlab-runner-install.sh
-        mode: '0755'
-
-    - name: Execute GitLab Runner repository script
-      command: /tmp/gitlab-runner-install.sh
-      args:
-        creates: /etc/yum.repos.d/runner_gitlab-runner.repo
-
-    - name: Install GitLab Runner
-      yum:
-        name: "{{ gitlab_runner_package }}"
-        state: present
-
     - name: Install Docker
       yum:
         name: docker
@@ -34,28 +15,35 @@
         state: started
         enabled: yes
 
-    - name: Add users to docker group
+    - name: Add ec2-user to docker group
       user:
-        name: "{{ item }}"
+        name: ec2-user
         groups: docker
         append: yes
-      loop: "{{ docker_users }}"
+
+    - name: Run GitLab Runner in a Docker container
+      community.docker.docker_container:
+        name: gitlab-runner
+        image: gitlab/gitlab-runner:latest
+        state: started
+        restart_policy: always
+        volumes:
+          - /srv/gitlab-runner/config:/etc/gitlab-runner
+          - /var/run/docker.sock:/var/run/docker.sock
 
     - name: Register GitLab Runner
       command: >
-        gitlab-runner register
+        docker exec -i gitlab-runner gitlab-runner register
         --non-interactive
         --url "{{ gitlab_url }}"
         --registration-token "{{ gitlab_token }}"
         --tag-list "{{ gitlab_tags }}"
         --executor "docker"
-        --docker-image "docker:stable"
+        --docker-image "docker:latest"
         --docker-privileged
-      args:
-        creates: /etc/gitlab-runner/config.toml
+      register: register_output
+      ignore_errors: true
 
-    - name: Start and enable GitLab Runner
-      service:
-        name: gitlab-runner
-        state: started
-        enabled: yes
+    - name: Display registration output
+      debug:
+        var: register_output.stdout_lines
